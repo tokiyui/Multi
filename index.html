@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>アメダス</title>
+  <link rel="icon" href="./signal.png">
+  <link rel="stylesheet" href="./leaflet.css">
+  <script src="./leaflet-src.js"></script>
+  <script src="./leaflet-hash.js"></script>
+  <style>
+    body{ padding:0; margin:0; font-family:sans-serif;}
+    html, body{ height:100%; width:100%;}
+    .container{ width:100%; height:100vh; display:flex; flex-direction:column; overflow:hidden;}
+    #menu{ flex:0.03;}
+    #map{ flex:0.97;}
+/*    div.sea2{ background:#87a9d2;}*/
+    div.sea2{ background:#3b4580;}
+    details.hanrei{ color:#222; font-size:150%; background:white; text-align:center; border-radius:5px; padding:5px; opacity:0.8;}
+    details.hanrei:hover{ transition:0.2s; opacity:1;}
+    details.hanrei[open]{ opacity:1;}
+    table,tr,th,td{ border-collapse:collapse;}
+    .plain{ background: rgba(0,0,0,0); border:solid 0px;}
+    .center{ text-align:center;}
+    .bold{ font-family:sans-serif; font-weight:bold;}
+    .fuchiblack{ text-shadow:1px 1px 0 #000, -1px -1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000}
+    .fuchiwhite{ text-shadow:1px 1px 0 #fff, -1px -1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff}
+/*
+    .fuchiblack{ text-shadow:1px 1px 0 #000, -1px -1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000,
+                             0px 1px 0 #000,  0px -1px 0 #000, -1px 0px 0 #000, 1px  0px 0 #000
+    }
+    .fuchiwhite{ text-shadow:1px 1px 0 #fff, -1px -1px 0 #fff, -1px 1px 0 #fff, 1px -1px 0 #fff,
+                             0px 1px 0 #fff,  0px -1px 0 #fff, -1px 0px 0 #fff, 1px  0px 0 #fff
+    }
+*/
+    .val_s{ font-size:100%;}
+    .val{ font-size:130%;}
+    .val_l{ font-size:150%;}
+    .val_ll{ font-size:170%;}
+    .liden{ color:#faf500;}
+/*    .fuchidori{ text-stroke:1px #000; -webkit-text-stroke:1px #000;}*/
+    div.info{ background:#005aff; color:white; font-weight:bold; font-size:150%; padding:0 3px;}
+    img.linkIcon{ mac-width:1.5em; max-height:1.5em;}
+    span.link{ color:#005aff; text-decoration:underline; cursor:pointer;}
+    @media( prefers-color-scheme:dark){
+      div.sea2{ background:#3b4580;}
+      body{ color:#ffffff; background:#111111;}
+      a, span.link{ color:#9db7f9;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="menu">
+      <span>
+        <select id="elem" onChange="jump();getTime()"></select>
+        │
+        <button onClick="chgTime(-1440);getTime('preventRefresh')">-1d</button>
+        <button onClick="chgTime(-60);getTime('preventRefresh')">-1h</button>
+        <button onClick="chgTime(-10);getTime('preventRefresh')">-10m</button>
+        <button onClick="getTime('refresh')">最新</button>
+        <button onClick="chgTime(+10);getTime('preventRefresh')">+10m</button>
+        <button onClick="chgTime(+60);getTime('preventRefresh')">+1h</button>
+        <button onClick="chgTime(+1440);getTime('preventRefresh')">+1d</button>
+        <span class="link" id="menu_narrow" style="display:none;" onClick="document.getElementById('menu_wide').style.display='inline';document.getElementById('menu_narrow').style.display='none';">追加設定-></span>
+      </span>
+      <span id="menu_wide" style="display:inlline;">
+        <input id="targDatetime" type="datetime-local">
+        <button onClick="jump();getTime('preventRefresh');">表示</button>
+        │
+        <input type="checkbox" id="overlay" onChange="jump();getTime('preventRefresh');"><label for="overlay">重ね画像の表示</label>
+        <select id="overElem" onChange="document.getElementById('overlay').checked=true;jump();getTime()">
+          <option value="rad">レーダー</option>
+          <option value="r1">1時間降水量</option>
+          <option value="r3">3時間降水量</option>
+          <option value="r24">24時間降水量</option>
+          <option value="sd">解析積雪深</option>
+          <option value="s3">3時間降雪量</option>
+          <option value="s6">6時間降雪量</option>
+          <option value="s12">12時間降雪量</option>
+          <option value="s24">24時間降雪量</option>
+          <option value="s48">48時間降雪量</option>
+          <option value="s72">72時間降雪量</option>
+          <option value="sat_ir">赤外</option>
+          <option value="sat_vis">可視</option>
+          <option value="sat_vap">水蒸気</option>
+          <option value="sat_tru">トゥルーカラー</option>
+          <option value="sat_str">雲頂強調</option>
+          <option value="sat_day">昼雲解析</option>
+          <option value="sat_nig">夜雲解析</option>
+          <option value="sat_nat">自然色</option>
+          <option value="sat_sno">雪霧</option>
+        </select>
+        <input type="range" id="overlayOpacity" min="0" max="1" value="1" step="0.1" onChange="jump();controlOpacity();">
+        <input type="checkbox" id="liden" onChange="jump();getTime('preventRefresh');"><label for="liden">雷の表示</label>
+        <input type="checkbox" id="overlayMunicipal" onChange="controlLayers();jump();"><label for="overlayMunicipal">行政区界重ね</label>        │
+        <input type="checkbox" id="autoRefresh" onChange="jump();every10min();" checked><label for="autoRefresh">自動更新</label>
+        <a href="http://maps.gsi.go.jp/" id="link_gsi"><img src="./images/gsi.ico" alt="地理院地図" title="地理院地図" class="linkIcon"></a>
+        <a href="https://www.openstreetmap.org/" id="link_osm"><img src="./images/osm.svg" alt="OpenStreetMap" title="OpenStreetMap" class="linkIcon"></a>
+        <a href="https://map.yahoo.co.jp/" id="link_yho"><img src="./images/yahoo.ico" alt="Yahoo!地図" title="Yahoo!地図" class="linkIcon"></a>
+        <a href="https://www.google.co.jp/maps/" id="link_gle"><img src="./images/google.png" alt="Googleマップ" title="Googleマップ" class="linkIcon"></a>
+        <a href="https://www.jma.go.jp/bosai/map.html#contents=amedas" id="link_jma"><img src="./images/jma.png" alt="アメダス(気象庁)" title="アメダス(気象庁)" class="linkIcon"></a>
+        <span class="link" onClick="document.getElementById('menu_narrow').style.display='inline';document.getElementById('menu_wide').style.display='none';">←畳む</span>
+      </span>
+    </div>
+    <div id="map" class="sea2"></div>
+  </div>
+  
+  <script src="./amedas.js"></script>
+</body>
+</html>
