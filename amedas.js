@@ -576,11 +576,6 @@ map.on('baselayerchange', function(){
 map.on('move', function () {
   let linkHash = location.hash.substring(1); // zoom/lat/lon
   let openUrl = "";
-  document.getElementById("link_gsi").href = "http://maps.gsi.go.jp/#" + linkHash;
-  document.getElementById("link_osm").href = "https://www.openstreetmap.org/#map=" + linkHash;
-  document.getElementById("link_yho").href = "https://map.yahoo.co.jp/?lat=" + linkHash.split('/')[1] + "&lon=" + linkHash.split('/')[2] + "&zoom=" + (linkHash.split('/')[0]);
-  document.getElementById("link_gle").href = "https://www.google.co.jp/maps/@" + linkHash.split('/')[1] + "," + linkHash.split('/')[2] + "," + linkHash.split('/')[0] + "z";
-  document.getElementById("link_jma").href = "https://www.jma.go.jp/bosai/map.html#" + linkHash + "/&elem=" + document.getElementById('elem').value + "&contents=amedas";
   controlGrays();
 });
 
